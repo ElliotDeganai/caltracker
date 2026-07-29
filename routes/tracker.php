@@ -15,12 +15,14 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-function slug(string $page): string
-{
-    try {
-        return AppSetting::slug($page);
-    } catch (\Throwable $e) {
-        return $page;
+if (! function_exists('slug')) {
+    function slug(string $page): string
+    {
+        try {
+            return AppSetting::slug($page);
+        } catch (\Throwable $e) {
+            return $page;
+        }
     }
 }
 
