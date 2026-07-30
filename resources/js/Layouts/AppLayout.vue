@@ -131,6 +131,15 @@ export default {
             <slot />
 
             <footer class="mt-12 border-t border-slate-200 pt-6 text-center text-xs text-slate-400">
+                <a href="https://ed-factory.com/" target="_blank" rel="noopener noreferrer"
+                    class="inline-flex items-center gap-1.5 text-slate-400 transition hover:text-slate-600">
+                    Made by
+                    <img src="/images/ed-logo.png" alt="ED" class="h-6 w-6 object-contain" />
+                    Web Factory
+                </a>
+
+                <div class="mx-auto my-3 h-px w-24 bg-slate-200"></div>
+
                 <p>{{ settings.app_name }} — © {{ new Date().getFullYear() }}</p>
             </footer>
         </main>

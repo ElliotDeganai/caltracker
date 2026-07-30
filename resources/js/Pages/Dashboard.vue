@@ -22,7 +22,6 @@ export default {
     },
     data() {
         return {
-            hoveredWeightIndex: null,
             showCalorieForm: false,
             showWeightForm: false,
             windowWidth: window.innerWidth,
@@ -109,6 +108,7 @@ export default {
                     y: this.weightTopMargin + (plotH - ((d.weight - min) / range) * plotH),
                     value: d.weight,
                     label: d.label,
+                    date: d.date,
                 })
                 .filter(Boolean);
         },
@@ -164,6 +164,13 @@ export default {
             const prev = this.last4Weeks[i - 1]?.average;
             if (cur === null || prev === null || cur === undefined || prev === undefined) return null;
             return +(cur - prev).toFixed(2);
+        },
+        formatDate(dateStr) {
+            const [year, month, day] = dateStr.split('-');
+            if (this.isMobile) {
+                return `${day}.${month}`;
+            }
+            return `${day}.${month}.${year.slice(2)}`;
         },
         async loadCaloriesForDate(date) {
             try {
@@ -237,7 +244,7 @@ export default {
                     <rect :x="barX(i)" :y="barY(day.calories)" :width="barWidth" :height="barHeight(day.calories)"
                         :fill="barColor(day.calories)" rx="4" />
                     <text :x="barX(i) + barWidth / 2" :y="chartHeight - 4" text-anchor="middle" :font-size="chartLabelSize" fill="#94a3b8">
-                        {{ day.label }}
+                        {{ formatDate(day.date) }}
                     </text>
                     <text :x="barX(i) + barWidth / 2" :y="barY(day.calories) - 6" text-anchor="middle" :font-size="chartValueSize"
                         :fill="barColor(day.calories)" font-weight="600">
@@ -340,7 +347,7 @@ export default {
                         </text>
 
                         <text :x="d.x" :y="weightChartHeight - 2" text-anchor="middle" :font-size="chartLabelSize" fill="#94a3b8">
-                            {{ d.label }}
+                            {{ formatDate(d.date) }}
                         </text>
                     </g>
                 </svg>
