@@ -21,7 +21,7 @@ Route::get('/', function () {
     if (auth()->check()) {
         return redirect('/' . AppSetting::slug('dashboard'));
     }
-    return redirect('/login');
+    return Inertia::render('Welcome');
 });
 
 /* Route::get('/dashboard', function () {

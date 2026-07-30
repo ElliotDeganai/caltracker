@@ -1,103 +1,64 @@
-<script setup>
-import GuestLayout from '@/Layouts/GuestLayout.vue';
-import InputError from '@/Components/InputError.vue';
-import InputLabel from '@/Components/InputLabel.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
-import TextInput from '@/Components/TextInput.vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+<script>
+import { Link, useForm } from '@inertiajs/vue3';
+import AuthSplitLayout from '@/Layouts/AuthSplitLayout.vue';
 
-const form = useForm({
-    name: '',
-    email: '',
-    password: '',
-    password_confirmation: '',
-});
-
-const submit = () => {
-    form.post(route('register'), {
-        onFinish: () => form.reset('password', 'password_confirmation'),
-    });
+export default {
+    components: { Link, AuthSplitLayout },
+    setup() {
+        const form = useForm({ name: '', email: '', password: '', password_confirmation: '' });
+        return { form };
+    },
+    methods: {
+        submit() {
+            this.form.post('/register', { onFinish: () => this.form.reset('password', 'password_confirmation') });
+        },
+    },
 };
 </script>
 
 <template>
-    <GuestLayout>
-        <Head title="Register" />
+    <AuthSplitLayout title="Créer un compte" heading="Rejoins-nous et\néquilibre tes calories." tagline="Crée ton compte pour commencer à suivre calories, poids et stock de plats préparés.">
+        <h1 class="text-2xl font-bold text-slate-900">Créer un compte</h1>
+        <p class="mt-1 text-sm text-slate-500">Quelques infos pour démarrer.</p>
 
-        <form @submit.prevent="submit">
+        <form @submit.prevent="submit" class="mt-8 space-y-5">
             <div>
-                <InputLabel for="name" value="Name" />
-
-                <TextInput
-                    id="name"
-                    type="text"
-                    class="mt-1 block w-full"
-                    v-model="form.name"
-                    required
-                    autofocus
-                    autocomplete="name"
-                />
-
-                <InputError class="mt-2" :message="form.errors.name" />
+                <label class="mb-1.5 block text-sm font-medium text-slate-700">Nom</label>
+                <input v-model="form.name" type="text" required autofocus autocomplete="name" placeholder="Ton nom"
+                    class="w-full rounded-xl border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 transition focus:border-sky-500 focus:bg-white focus:ring-2 focus:ring-sky-500/20" />
+                <div v-if="form.errors.name" class="mt-1.5 text-xs text-red-500">{{ form.errors.name }}</div>
             </div>
 
-            <div class="mt-4">
-                <InputLabel for="email" value="Email" />
-
-                <TextInput
-                    id="email"
-                    type="email"
-                    class="mt-1 block w-full"
-                    v-model="form.email"
-                    required
-                    autocomplete="username"
-                />
-
-                <InputError class="mt-2" :message="form.errors.email" />
+            <div>
+                <label class="mb-1.5 block text-sm font-medium text-slate-700">E-mail</label>
+                <input v-model="form.email" type="email" required autocomplete="username" placeholder="toi@exemple.com"
+                    class="w-full rounded-xl border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 transition focus:border-sky-500 focus:bg-white focus:ring-2 focus:ring-sky-500/20" />
+                <div v-if="form.errors.email" class="mt-1.5 text-xs text-red-500">{{ form.errors.email }}</div>
             </div>
 
-            <div class="mt-4">
-                <InputLabel for="password" value="Password" />
-
-                <TextInput
-                    id="password"
-                    type="password"
-                    class="mt-1 block w-full"
-                    v-model="form.password"
-                    required
-                    autocomplete="new-password"
-                />
-
-                <InputError class="mt-2" :message="form.errors.password" />
+            <div>
+                <label class="mb-1.5 block text-sm font-medium text-slate-700">Mot de passe</label>
+                <input v-model="form.password" type="password" required autocomplete="new-password" placeholder="••••••••"
+                    class="w-full rounded-xl border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 transition focus:border-sky-500 focus:bg-white focus:ring-2 focus:ring-sky-500/20" />
+                <div v-if="form.errors.password" class="mt-1.5 text-xs text-red-500">{{ form.errors.password }}</div>
             </div>
 
-            <div class="mt-4">
-                <InputLabel for="password_confirmation" value="Confirm Password" />
-
-                <TextInput
-                    id="password_confirmation"
-                    type="password"
-                    class="mt-1 block w-full"
-                    v-model="form.password_confirmation"
-                    required
-                    autocomplete="new-password"
-                />
-
-                <InputError class="mt-2" :message="form.errors.password_confirmation" />
+            <div>
+                <label class="mb-1.5 block text-sm font-medium text-slate-700">Confirmer le mot de passe</label>
+                <input v-model="form.password_confirmation" type="password" required autocomplete="new-password" placeholder="••••••••"
+                    class="w-full rounded-xl border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 transition focus:border-sky-500 focus:bg-white focus:ring-2 focus:ring-sky-500/20" />
+                <div v-if="form.errors.password_confirmation" class="mt-1.5 text-xs text-red-500">{{ form.errors.password_confirmation }}</div>
             </div>
 
-            <div class="flex items-center justify-end mt-4">
-                <Link
-                    :href="route('login')"
-                    class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                >
-                    Already registered?
-                </Link>
+            <button type="submit" :disabled="form.processing"
+                class="w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:opacity-50">
+                Créer mon compte
+            </button>
 
-                <PrimaryButton class="ms-4" :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
-                    Register
-                </PrimaryButton>
-            </div>
+            <p class="text-center text-sm text-slate-500">
+                Déjà un compte ?
+                <Link href="/login" class="font-medium text-sky-600 hover:text-sky-700">Se connecter</Link>
+            </p>
         </form>
-    </GuestLayout>
+    </AuthSplitLayout>
 </template>

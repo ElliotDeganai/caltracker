@@ -1,51 +1,46 @@
-<script setup>
-import { computed } from 'vue';
-import GuestLayout from '@/Layouts/GuestLayout.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+<script>
+import { Link, useForm } from '@inertiajs/vue3';
+import AuthSplitLayout from '@/Layouts/AuthSplitLayout.vue';
 
-const props = defineProps({
-    status: {
-        type: String,
+export default {
+    components: { Link, AuthSplitLayout },
+    props: { status: String },
+    setup() {
+        const form = useForm({});
+        return { form };
     },
-});
-
-const form = useForm({});
-
-const submit = () => {
-    form.post(route('verification.send'));
+    computed: {
+        verificationLinkSent() {
+            return this.status === 'verification-link-sent';
+        },
+    },
+    methods: {
+        submit() {
+            this.form.post('/email/verification-notification');
+        },
+    },
 };
-
-const verificationLinkSent = computed(() => props.status === 'verification-link-sent');
 </script>
 
 <template>
-    <GuestLayout>
-        <Head title="Email Verification" />
+    <AuthSplitLayout title="Vérifier l'e-mail" heading="Plus qu'une\nétape." tagline="Confirme ton adresse e-mail pour activer ton compte.">
+        <h1 class="text-2xl font-bold text-slate-900">Vérifie ton e-mail</h1>
+        <p class="mt-1 text-sm text-slate-500">Merci de confirmer ton adresse via le lien qu'on vient de t'envoyer.</p>
 
-        <div class="mb-4 text-sm text-gray-600">
-            Thanks for signing up! Before getting started, could you verify your email address by clicking on the link
-            we just emailed to you? If you didn't receive the email, we will gladly send you another.
+        <div v-if="verificationLinkSent" class="mt-5 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+            Un nouveau lien de vérification a été envoyé à ton adresse e-mail.
         </div>
 
-        <div class="mb-4 font-medium text-sm text-green-600" v-if="verificationLinkSent">
-            A new verification link has been sent to the email address you provided during registration.
-        </div>
+        <form @submit.prevent="submit" class="mt-8 space-y-4">
+            <button type="submit" :disabled="form.processing"
+                class="w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:opacity-50">
+                Renvoyer l'e-mail de vérification
+            </button>
 
-        <form @submit.prevent="submit">
-            <div class="mt-4 flex items-center justify-between">
-                <PrimaryButton :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
-                    Resend Verification Email
-                </PrimaryButton>
-
-                <Link
-                    :href="route('logout')"
-                    method="post"
-                    as="button"
-                    class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                    >Log Out</Link
-                >
-            </div>
+            <Link href="/logout" method="post" as="button"
+                class="w-full text-center text-sm text-slate-500 hover:text-slate-700">
+                Se déconnecter
+            </Link>
         </form>
-    </GuestLayout>
+    </AuthSplitLayout>
 </template>

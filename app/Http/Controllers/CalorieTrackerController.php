@@ -128,4 +128,25 @@ class CalorieTrackerController extends Controller
 
         return back();
     }
+
+    public function getCalories(Request $request, string $date)
+    {
+        $userId = $this->targetUserId($request);
+        $log = CalorieLog::where('user_id', $userId)->whereDate('date', $date)->first();
+
+        return response()->json([
+            'calories' => $log?->calories,
+            'note' => $log?->note,
+        ]);
+    }
+
+    public function getWeight(Request $request, string $date)
+    {
+        $userId = $this->targetUserId($request);
+        $log = WeightLog::where('user_id', $userId)->whereDate('date', $date)->first();
+
+        return response()->json([
+            'weight_kg' => $log?->weight_kg,
+        ]);
+    }
 }

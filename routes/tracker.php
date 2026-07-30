@@ -91,3 +91,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->middleware('permission:manage-settings')
         ->name('settings.slugs');
 });
+
+Route::get('/calories/{date}', [CalorieTrackerController::class, 'getCalories'])
+    ->middleware('permission:log-calories')
+    ->where('date', '\d{4}-\d{2}-\d{2}')
+    ->name('calories.get');
+
+Route::get('/poids/{date}', [CalorieTrackerController::class, 'getWeight'])
+    ->middleware('permission:log-weight')
+    ->where('date', '\d{4}-\d{2}-\d{2}')
+    ->name('weight.get');
