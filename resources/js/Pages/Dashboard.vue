@@ -25,6 +25,7 @@ export default {
             hoveredWeightIndex: null,
             showCalorieForm: false,
             showWeightForm: false,
+            windowWidth: window.innerWidth,
         };
     },
     setup(props) {
@@ -40,7 +41,23 @@ export default {
 
         return { calorieForm, weightForm };
     },
+    mounted() {
+        window.addEventListener('resize', this.updateWindowWidth);
+    },
+    unmounted() {
+        window.removeEventListener('resize', this.updateWindowWidth);
+    },
     computed: {
+        isMobile() {
+            return this.windowWidth < 640;
+        },
+        chartLabelSize() {
+            return this.isMobile ? 20 : 11;
+        },
+        chartValueSize() {
+            return this.isMobile ? 22 : 11;
+        },
+
         // --- Graphique calories ---
         chartWidth() { return 700; },
         chartHeight() { return 180; },
@@ -50,7 +67,7 @@ export default {
             return Math.max(this.weeklyTarget * 1.3, ...this.last7.map(d => d.calories || 0), 1);
         },
         plotHeight() {
-            return this.chartHeight - this.chartPadding - 16;
+            return this.chartHeight - this.chartPadding - (this.chartValueSize + 10);
         },
         targetY() {
             return this.chartHeight - this.chartPadding - (this.weeklyTarget / this.maxValue) * this.plotHeight;
@@ -63,6 +80,10 @@ export default {
         weightChartWidth() { return 600; },
         weightChartHeight() { return 130; },
         weightChartPad() { return 14; },
+        weightPillWidth() { return this.chartValueSize * 2.6; },
+        weightPillHeight() { return this.chartValueSize * 1.5; },
+        weightPillFontSize() { return this.chartValueSize * 0.75; },
+        weightTopMargin() { return this.weightPillHeight + 12; },
         weightScale() {
             const values = this.last7Weights.map(d => d.smoothed).filter(v => v !== null);
             const rawValues = this.last7Weights.map(d => d.weight).filter(v => v !== null);
@@ -74,7 +95,7 @@ export default {
             return { min: min - pad, max: max + pad };
         },
         weightPlotHeight() {
-            return this.weightChartHeight - 16;
+            return this.weightChartHeight - 16 - this.weightTopMargin;
         },
         weightRawPoints() {
             const { min, max } = this.weightScale;
@@ -85,7 +106,7 @@ export default {
             return this.last7Weights
                 .map((d, i) => d.weight === null ? null : {
                     x: pad + (i / (this.last7Weights.length - 1)) * usableWidth,
-                    y: plotH - ((d.weight - min) / range) * plotH,
+                    y: this.weightTopMargin + (plotH - ((d.weight - min) / range) * plotH),
                     value: d.weight,
                     label: d.label,
                 })
@@ -100,7 +121,7 @@ export default {
             return this.last7Weights
                 .map((d, i) => d.smoothed === null ? null : {
                     x: pad + (i / (this.last7Weights.length - 1)) * usableWidth,
-                    y: plotH - ((d.smoothed - min) / range) * plotH,
+                    y: this.weightTopMargin + (plotH - ((d.smoothed - min) / range) * plotH),
                 })
                 .filter(Boolean);
         },
@@ -111,16 +132,11 @@ export default {
             if (this.weightDelta === null) return '#94a3b8';
             return this.weightDelta > 0 ? '#dc2626' : '#059669';
         },
-        tooltipPosition() {
-            if (this.hoveredWeightIndex === null) return { left: '0%', top: '0%' };
-            const p = this.weightRawPoints[this.hoveredWeightIndex];
-            return {
-                left: (p.x / this.weightChartWidth * 100) + '%',
-                top: (p.y / this.weightChartHeight * 100) + '%',
-            };
-        },
     },
     methods: {
+        updateWindowWidth() {
+            this.windowWidth = window.innerWidth;
+        },
         submitCalories() {
             this.calorieForm.post('/calories', { preserveScroll: true });
         },
@@ -220,10 +236,10 @@ export default {
                 <g v-for="(day, i) in last7" :key="day.date">
                     <rect :x="barX(i)" :y="barY(day.calories)" :width="barWidth" :height="barHeight(day.calories)"
                         :fill="barColor(day.calories)" rx="4" />
-                    <text :x="barX(i) + barWidth / 2" :y="chartHeight - 4" text-anchor="middle" font-size="11" fill="#94a3b8">
+                    <text :x="barX(i) + barWidth / 2" :y="chartHeight - 4" text-anchor="middle" :font-size="chartLabelSize" fill="#94a3b8">
                         {{ day.label }}
                     </text>
-                    <text :x="barX(i) + barWidth / 2" :y="barY(day.calories) - 6" text-anchor="middle" font-size="11"
+                    <text :x="barX(i) + barWidth / 2" :y="barY(day.calories) - 6" text-anchor="middle" :font-size="chartValueSize"
                         :fill="barColor(day.calories)" font-weight="600">
                         {{ day.calories ?? '-' }}
                     </text>
@@ -314,23 +330,20 @@ export default {
                     <polyline :points="weightSmoothedLine" fill="none" :stroke="weightTrendColor" stroke-width="2.5"
                         stroke-linecap="round" stroke-linejoin="round" />
                     <g v-for="(d, i) in weightRawPoints" :key="'raw-'+i">
-                        <circle :cx="d.x" :cy="d.y" r="3" fill="#cbd5e1" />
-                        <circle :cx="d.x" :cy="d.y" r="12" fill="transparent"
-                            @mouseenter="hoveredWeightIndex = i" @mouseleave="hoveredWeightIndex = null"
-                            class="cursor-pointer" />
-                        <circle v-if="hoveredWeightIndex === i" :cx="d.x" :cy="d.y" r="5" :fill="weightTrendColor" />
-                        <text :x="d.x" :y="weightChartHeight - 2" text-anchor="middle" font-size="11" fill="#94a3b8">
+                        <circle :cx="d.x" :cy="d.y" r="3" :fill="weightTrendColor" />
+
+                        <rect :x="d.x - weightPillWidth / 2" :y="d.y - weightPillHeight - 10" :width="weightPillWidth" :height="weightPillHeight" rx="7"
+                            fill="white" :stroke="weightTrendColor" stroke-width="1.5" />
+                        <text :x="d.x" :y="d.y - weightPillHeight / 2 - 10 + weightPillFontSize * 0.35" text-anchor="middle"
+                            :font-size="weightPillFontSize" font-weight="600" :fill="weightTrendColor">
+                            {{ d.value }}
+                        </text>
+
+                        <text :x="d.x" :y="weightChartHeight - 2" text-anchor="middle" :font-size="chartLabelSize" fill="#94a3b8">
                             {{ d.label }}
                         </text>
                     </g>
                 </svg>
-
-                <div v-if="hoveredWeightIndex !== null"
-                    class="pointer-events-none absolute -translate-x-1/2 -translate-y-full rounded-lg bg-slate-800 px-2.5 py-1.5 text-xs text-white shadow-lg"
-                    :style="{ left: tooltipPosition.left, top: tooltipPosition.top }">
-                    <div class="font-semibold">{{ weightRawPoints[hoveredWeightIndex].value }} kg</div>
-                    <div class="text-slate-300">{{ weightRawPoints[hoveredWeightIndex].label }}</div>
-                </div>
             </div>
 
             <button @click="showWeightForm = !showWeightForm"
