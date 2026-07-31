@@ -101,3 +101,13 @@ Route::get('/poids/{date}', [CalorieTrackerController::class, 'getWeight'])
     ->middleware('permission:log-weight')
     ->where('date', '\d{4}-\d{2}-\d{2}')
     ->name('weight.get');
+
+Route::get('/calories/week/{offset}', [CalorieTrackerController::class, 'getCaloriesWeek'])
+    ->middleware('permission:view-dashboard')
+    ->where('offset', '\d+')
+    ->name('calories.week');
+
+Route::get('/poids/week/{offset}', [CalorieTrackerController::class, 'getWeightWeek'])
+    ->middleware('permission:view-dashboard')
+    ->where('offset', '\d+')
+    ->name('weight.week');

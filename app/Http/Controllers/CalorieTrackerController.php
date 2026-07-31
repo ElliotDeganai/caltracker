@@ -149,4 +149,49 @@ class CalorieTrackerController extends Controller
             'weight_kg' => $log?->weight_kg,
         ]);
     }
+
+    public function getCaloriesWeek(Request $request, int $offset)
+    {
+        $userId = $this->targetUserId($request);
+        $end = Carbon::today()->subWeeks($offset);
+
+        $days = collect(range(6, 0))->map(function ($daysAgo) use ($userId, $end) {
+            $date = (clone $end)->subDays($daysAgo);
+            $log = CalorieLog::where('user_id', $userId)->whereDate('date', $date)->first();
+            return [
+                'date' => $date->format('Y-m-d'),
+                'label' => $date->locale('fr')->translatedFormat('D'),
+                'calories' => $log?->calories,
+            ];
+        });
+
+        return response()->json([
+            'days' => $days,
+            'rangeStart' => $days->first()['date'],
+            'rangeEnd' => $days->last()['date'],
+        ]);
+    }
+
+    public function getWeightWeek(Request $request, int $offset)
+    {
+        $userId = $this->targetUserId($request);
+        $end = Carbon::today()->subWeeks($offset);
+
+        $days = collect(range(6, 0))->map(function ($daysAgo) use ($userId, $end) {
+            $date = (clone $end)->subDays($daysAgo);
+            $log = WeightLog::where('user_id', $userId)->whereDate('date', $date)->first();
+            return [
+                'date' => $date->format('Y-m-d'),
+                'label' => $date->locale('fr')->translatedFormat('D'),
+                'weight' => $log?->weight_kg,
+                'smoothed' => WeightLog::rollingAverage($userId, $date, 7),
+            ];
+        });
+
+        return response()->json([
+            'days' => $days,
+            'rangeStart' => $days->first()['date'],
+            'rangeEnd' => $days->last()['date'],
+        ]);
+    }
 }

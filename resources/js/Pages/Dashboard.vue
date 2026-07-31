@@ -25,7 +25,15 @@ export default {
             showCalorieForm: false,
             showWeightForm: false,
             windowWidth: window.innerWidth,
+            weekOffset: 0,
+            currentLast7: [],
+            currentLast7Weights: [],
+            loadingWeek: false,
         };
+    },
+    created() {
+        this.currentLast7 = this.last7;
+        this.currentLast7Weights = this.last7Weights;
     },
     setup(props) {
         const calorieForm = useForm({
@@ -63,7 +71,7 @@ export default {
         chartPadding() { return 24; },
         leftMargin() { return 70; },
         maxValue() {
-            return Math.max(this.weeklyTarget * 1.3, ...this.last7.map(d => d.calories || 0), 1);
+            return Math.max(this.weeklyTarget * 1.3, ...this.currentLast7.map(d => d.calories || 0), 1);
         },
         plotHeight() {
             return this.chartHeight - this.chartPadding - (this.chartValueSize + 10);
@@ -72,7 +80,7 @@ export default {
             return this.chartHeight - this.chartPadding - (this.weeklyTarget / this.maxValue) * this.plotHeight;
         },
         barWidth() {
-            return ((this.chartWidth - this.leftMargin) / this.last7.length) * 0.5;
+            return ((this.chartWidth - this.leftMargin) / this.currentLast7.length) * 0.5;
         },
 
         // --- Graphique poids ---
@@ -84,8 +92,8 @@ export default {
         weightPillFontSize() { return this.chartValueSize * 0.75; },
         weightTopMargin() { return this.weightPillHeight + 12; },
         weightScale() {
-            const values = this.last7Weights.map(d => d.smoothed).filter(v => v !== null);
-            const rawValues = this.last7Weights.map(d => d.weight).filter(v => v !== null);
+            const values = this.currentLast7Weights.map(d => d.smoothed).filter(v => v !== null);
+            const rawValues = this.currentLast7Weights.map(d => d.weight).filter(v => v !== null);
             const all = [...values, ...rawValues];
             if (!all.length) return { min: 0, max: 1 };
             const min = Math.min(...all);
@@ -102,9 +110,9 @@ export default {
             const plotH = this.weightPlotHeight;
             const pad = this.weightChartPad;
             const usableWidth = this.weightChartWidth - pad * 2;
-            return this.last7Weights
+            return this.currentLast7Weights
                 .map((d, i) => d.weight === null ? null : {
-                    x: pad + (i / (this.last7Weights.length - 1)) * usableWidth,
+                    x: pad + (i / (this.currentLast7Weights.length - 1)) * usableWidth,
                     y: this.weightTopMargin + (plotH - ((d.weight - min) / range) * plotH),
                     value: d.weight,
                     label: d.label,
@@ -118,9 +126,9 @@ export default {
             const plotH = this.weightPlotHeight;
             const pad = this.weightChartPad;
             const usableWidth = this.weightChartWidth - pad * 2;
-            return this.last7Weights
+            return this.currentLast7Weights
                 .map((d, i) => d.smoothed === null ? null : {
-                    x: pad + (i / (this.last7Weights.length - 1)) * usableWidth,
+                    x: pad + (i / (this.currentLast7Weights.length - 1)) * usableWidth,
                     y: this.weightTopMargin + (plotH - ((d.smoothed - min) / range) * plotH),
                 })
                 .filter(Boolean);
@@ -131,6 +139,18 @@ export default {
         weightTrendColor() {
             if (this.weightDelta === null) return '#94a3b8';
             return this.weightDelta > 0 ? '#dc2626' : '#059669';
+        },
+        weekRangeLabel() {
+            return this.weekOffset === 0 ? 'Cette semaine' : `Il y a ${this.weekOffset} semaine${this.weekOffset > 1 ? 's' : ''}`;
+        },
+        // Positions de TOUS les jours de la semaine (avec ou sans pesée) pour toujours afficher les labels de date
+        weightAllDayPositions() {
+            const pad = this.weightChartPad;
+            const usableWidth = this.weightChartWidth - pad * 2;
+            return this.currentLast7Weights.map((d, i) => ({
+                x: pad + (i / (this.currentLast7Weights.length - 1)) * usableWidth,
+                date: d.date,
+            }));
         },
     },
     methods: {
@@ -144,7 +164,7 @@ export default {
             this.weightForm.post('/poids', { preserveScroll: true });
         },
         barX(i) {
-            const slot = (this.chartWidth - this.leftMargin) / this.last7.length;
+            const slot = (this.chartWidth - this.leftMargin) / this.currentLast7.length;
             return this.leftMargin + slot * i + (slot - this.barWidth) / 2;
         },
         barHeight(calories) {
@@ -189,8 +209,41 @@ export default {
                 console.error('Erreur loadWeightForDate:', e.response?.status, e.response?.data);
             }
         },
+        async loadWeek(offset) {
+            this.loadingWeek = true;
+            try {
+                const [caloriesRes, weightRes] = await Promise.all([
+                    window.axios.get(`/calories/week/${offset}`),
+                    window.axios.get(`/poids/week/${offset}`),
+                ]);
+                this.currentLast7 = caloriesRes.data.days;
+                this.currentLast7Weights = weightRes.data.days;
+                this.weekOffset = offset;
+            } catch (e) {
+                console.error('Erreur loadWeek:', e.response?.status, e.response?.data);
+            } finally {
+                this.loadingWeek = false;
+            }
+        },
+        previousWeek() {
+            this.loadWeek(this.weekOffset + 1);
+        },
+        nextWeek() {
+            if (this.weekOffset > 0) this.loadWeek(this.weekOffset - 1);
+        },
     },
     watch: {
+        // Aligne la date par défaut des formulaires sur la semaine actuellement affichée
+        weekOffset() {
+            const lastCalDay = this.currentLast7[this.currentLast7.length - 1];
+            if (lastCalDay) {
+                this.calorieForm.date = lastCalDay.date;
+            }
+            const lastWeightDay = this.currentLast7Weights[this.currentLast7Weights.length - 1];
+            if (lastWeightDay) {
+                this.weightForm.date = lastWeightDay.date;
+            }
+        },
         'calorieForm.date'(newDate) {
             this.loadCaloriesForDate(newDate);
         },
@@ -232,6 +285,19 @@ export default {
                     — Objectif : {{ weeklyTarget }} kcal
                 </span>
             </div>
+
+            <div class="mb-3 flex items-center justify-between">
+                <button @click="previousWeek" :disabled="loadingWeek"
+                    class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 disabled:opacity-30">
+                    ◀
+                </button>
+                <span class="text-xs font-medium text-slate-500">{{ weekRangeLabel }}</span>
+                <button @click="nextWeek" :disabled="loadingWeek || weekOffset === 0"
+                    class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 disabled:opacity-30">
+                    ▶
+                </button>
+            </div>
+
             <div class="mb-3 flex items-center gap-3 text-xs text-slate-400">
                 <span class="flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-emerald-500"></span>Sous l'objectif</span>
                 <span class="flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-red-500"></span>Dépassé</span>
@@ -240,7 +306,7 @@ export default {
             <svg :viewBox="`0 0 ${chartWidth} ${chartHeight}`" class="w-full">
                 <line :x1="0" :y1="targetY" :x2="chartWidth" :y2="targetY"
                     stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="6 4" />
-                <g v-for="(day, i) in last7" :key="day.date">
+                <g v-for="(day, i) in currentLast7" :key="day.date">
                     <rect :x="barX(i)" :y="barY(day.calories)" :width="barWidth" :height="barHeight(day.calories)"
                         :fill="barColor(day.calories)" rx="4" />
                     <text :x="barX(i) + barWidth / 2" :y="chartHeight - 4" text-anchor="middle" :font-size="chartLabelSize" fill="#94a3b8">
@@ -325,6 +391,19 @@ export default {
                     — Moyenne 7j : {{ smoothedToday ?? '-' }} kg
                 </span>
             </div>
+
+            <div class="mb-3 flex items-center justify-between">
+                <button @click="previousWeek" :disabled="loadingWeek"
+                    class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 disabled:opacity-30">
+                    ◀
+                </button>
+                <span class="text-xs font-medium text-slate-500">{{ weekRangeLabel }}</span>
+                <button @click="nextWeek" :disabled="loadingWeek || weekOffset === 0"
+                    class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 disabled:opacity-30">
+                    ▶
+                </button>
+            </div>
+
             <div class="mb-3">
                 <span class="rounded-full px-2.5 py-1 text-xs font-medium"
                     :class="weightDelta === null ? 'bg-slate-100 text-slate-500' : (weightDelta > 0 ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600')">
@@ -336,6 +415,8 @@ export default {
                 <svg :viewBox="`0 0 ${weightChartWidth} ${weightChartHeight}`" class="w-full" style="overflow: visible;">
                     <polyline :points="weightSmoothedLine" fill="none" :stroke="weightTrendColor" stroke-width="2.5"
                         stroke-linecap="round" stroke-linejoin="round" />
+
+                    <!-- Points + pastilles : seulement les jours avec une valeur -->
                     <g v-for="(d, i) in weightRawPoints" :key="'raw-'+i">
                         <circle :cx="d.x" :cy="d.y" r="3" :fill="weightTrendColor" />
 
@@ -345,11 +426,13 @@ export default {
                             :font-size="weightPillFontSize" font-weight="600" :fill="weightTrendColor">
                             {{ d.value }}
                         </text>
-
-                        <text :x="d.x" :y="weightChartHeight - 2" text-anchor="middle" :font-size="chartLabelSize" fill="#94a3b8">
-                            {{ formatDate(d.date) }}
-                        </text>
                     </g>
+
+                    <!-- Labels de date : TOUS les jours, avec ou sans valeur -->
+                    <text v-for="(d, i) in weightAllDayPositions" :key="'label-'+i"
+                        :x="d.x" :y="weightChartHeight - 2" text-anchor="middle" :font-size="chartLabelSize" fill="#94a3b8">
+                        {{ formatDate(d.date) }}
+                    </text>
                 </svg>
             </div>
 
