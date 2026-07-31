@@ -67,7 +67,7 @@ export default {
 
         // --- Graphique calories ---
         chartWidth() { return 700; },
-        chartHeight() { return 180; },
+        chartHeight() { return this.isMobile ? 250 : 180; },
         chartPadding() { return 24; },
         leftMargin() { return 70; },
         maxValue() {
@@ -85,7 +85,7 @@ export default {
 
         // --- Graphique poids ---
         weightChartWidth() { return 600; },
-        weightChartHeight() { return 130; },
+        weightChartHeight() { return this.isMobile ? 200 : 130; },
         weightChartPad() { return 14; },
         weightPillWidth() { return this.chartValueSize * 2.6; },
         weightPillHeight() { return this.chartValueSize * 1.5; },
