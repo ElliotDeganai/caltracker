@@ -60,5 +60,6 @@ export default {
                 <Link href="/login" class="font-medium text-sky-600 hover:text-sky-700">Se connecter</Link>
             </p>
         </form>
+
     </AuthSplitLayout>
 </template>

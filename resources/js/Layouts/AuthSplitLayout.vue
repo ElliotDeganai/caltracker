@@ -45,6 +45,14 @@ export default {
         <div class="flex flex-1 items-center justify-center px-6 py-10 lg:w-1/2 lg:py-12">
             <div class="w-full max-w-sm">
                 <slot />
+                <footer class="mt-12 border-slate-200 pt-6 pb-6 text-center text-xs text-slate-400">
+                    <a href="https://ed-factory.com/" target="_blank" rel="noopener noreferrer"
+                        class="inline-flex items-center gap-1.5 text-slate-400 transition hover:text-slate-600">
+                        Made by
+                        <img src="/images/ed-logo.png" alt="ED" class="h-6 w-6 object-contain" />
+                        Web Factory
+                    </a>
+                </footer>
             </div>
         </div>
     </div>

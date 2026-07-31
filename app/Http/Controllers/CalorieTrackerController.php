@@ -111,7 +111,7 @@ class CalorieTrackerController extends Controller
             ['calories' => $data['calories'], 'note' => $data['note'] ?? null]
         );
 
-        return back();
+        return back()->with('success', 'Calories mises à jour !');
     }
 
     public function storeWeight(Request $request)
@@ -126,7 +126,7 @@ class CalorieTrackerController extends Controller
             ['weight_kg' => $data['weight_kg']]
         );
 
-        return back();
+        return back()->with('success', 'Poids mis à jour !');
     }
 
     public function getCalories(Request $request, string $date)
