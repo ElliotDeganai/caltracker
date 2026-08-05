@@ -250,6 +250,22 @@ export default {
         'weightForm.date'(newDate) {
             this.loadWeightForDate(newDate);
         },
+        last7: {
+            handler(newVal) {
+                if (this.weekOffset === 0) {
+                    this.currentLast7 = newVal;
+                }
+            },
+            deep: true,
+        },
+        last7Weights: {
+            handler(newVal) {
+                if (this.weekOffset === 0) {
+                    this.currentLast7Weights = newVal;
+                }
+            },
+            deep: true,
+        },
     },
 };
 </script>
